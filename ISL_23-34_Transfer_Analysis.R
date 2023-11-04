@@ -1,37 +1,16 @@
 # When do the teams score and how?
 
-library(worldfootballR)
-library(StatsBombR)
+
 library(reactable)
 library(reactablefmtr)
 library(tidyverse)
-
-
-
-# Getting Transfer Market Data --------------------------------------------
-
-# 
-# team_urls <- tm_league_team_urls(country_name = "India", start_year = 2023)
-# 
-# 
-# all_teams_transfers <- tm_team_transfers(team_url = team_urls, transfer_window = "all")
-# 
-# 
-# isl_league_valuations <- tm_player_market_values(country_name = "India",
-#                                                start_year = 2023)
-# 
-# 
-# 
-# # Fetching Match URLS -----------------------------------------------------
-# 
-# match_urls<- fb_match_urls(country = "IND", gender = "M", season_end_year = 2024, tier="1st")
-# 
-
-
-
-
-
 library(rvest)
+
+
+site<-"https://www.indiansuperleague.com"
+
+aa<-read_html(site) %>% html_elements(".club-image img") %>% html_attr("src")
+aa<-paste0(site,aa)
 
 scrape_image <-
   read_html(
@@ -56,7 +35,7 @@ for (i in 1:length(All_Transfers)) {
 
   
   All_Transfers[[i]]$Team_Name<-Fetch_titles[[i]]
-  All_Transfers[[i]]$Club_Logo_URL<-scrape_image[[i]]
+  All_Transfers[[i]]$Club_Logo_URL<-aa[[i]]
   if(grepl("In",colnames(All_Transfers[[i]])[1])==T){
     All_Transfers[[i]]$Transfer_Type="Arrivals"
     All_Transfers[[i]]<-All_Transfers[[i]] %>% select(-Left)
@@ -73,12 +52,46 @@ for (i in 1:length(All_Transfers)) {
 All_Transfers<-do.call(rbind,All_Transfers)
 All_Transfers<-as.data.frame(All_Transfers)
 
+All_Transfers<-All_Transfers %>% select(-Nat.)
 
 
-reactable(All_Transfers %>% filter(Team_Name=="East Bengal FC") %>% select(`Player Name`,Club_Logo_URL,everything()),
-          columns = list(
-            Club_Logo_URL = colDef(cell = embed_img())))
 
+write.csv(All_Transfers,"All_Transfers.csv")
+
+reactable(
+  All_Transfers %>% filter(
+    Team_Name == "Bengaluru FC",
+    Transfer_Type ==
+      "Arrivals"
+  ) %>% select(`Player Name`, Club_Logo_URL, everything()),
+  theme = flatly(
+    font_size = 12,
+    font_color = "grey",
+    cell_padding = 3
+  ),
+  pagination = F,
+  striped = T,
+  bordered = T,
+  highlight = T,
+  compact = T,
+  columns = list(
+    #Club_Logo_URL = colDef(show = FALSE),
+    `Player Name`= colDef(align="center"),
+    Age=colDef(align="center"),
+    Position=colDef(align="center"),
+    Fee=colDef(align="center"),
+    Pos=colDef(align="center"),
+    `Market value`=colDef(align="center"),
+    Team_Name=colDef(show=F),
+    Transfer_Type=colDef(show=F),
+    Club_Logo_URL = colDef(
+      name = "Team",
+      align = "center",
+      cell = embed_img( width = 40)
+    )
+    #Club_Logo_URL = colDef(cell = embed_img(width = "20px", height = "30px"))
+  )
+)
 
 
 
