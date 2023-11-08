@@ -9,21 +9,36 @@ library(rvest)
 
 site<-"https://www.indiansuperleague.com"
 
-aa<-read_html(site) %>% html_elements(".club-image img") %>% html_attr("src")
-aa<-paste0(site,aa)
+club_image_url<-read_html(site) %>% html_elements(".club-image img") %>% html_attr("src")
+club_image_url<-paste0(site,club_image_url)
 
-scrape_image <-
-  read_html(
-    "https://www.transfermarkt.co.in/indian-super-league/transfers/wettbewerb/IND1"
-  ) %>% html_elements(".content-box-headline--logo img") %>% html_attr("src") 
 
-scrape_image<-rep(scrape_image,each=2)
+club_image_titles<-read_html(site) %>% html_elements(".club-name") %>% html_text()
+
+club_img_details<-data.frame("Club_Image_URL"=club_image_url,"Club_Title"=club_image_titles)
+
+
+# scrape_image <-
+#   read_html(
+#     "https://www.transfermarkt.co.in/indian-super-league/transfers/wettbewerb/IND1"
+#   ) %>% html_elements(".content-box-headline--logo img") %>% html_attr("src") 
+# 
+# scrape_image<-rep(scrape_image,each=2)
 
 Fetch_titles<-read_html(
   "https://www.transfermarkt.co.in/indian-super-league/transfers/wettbewerb/IND1"
 ) %>% html_elements(".content-box-headline--logo a") %>% html_attr("title")
 
 Fetch_titles<-gsub("Array","",Fetch_titles)
+
+
+# Get the indices for sorting
+indices <- order(match(club_img_details$Club_Title, Fetch_titles))
+
+# Sort the data frame based on the vector
+club_img_details1 <- club_img_details[indices, ]
+
+
 
 All_Transfers<-read_html(
   "https://www.transfermarkt.co.in/indian-super-league/transfers/wettbewerb/IND1"
@@ -34,8 +49,8 @@ All_Transfers<-read_html(
 for (i in 1:length(All_Transfers)) {
 
   
-  All_Transfers[[i]]$Team_Name<-Fetch_titles[[i]]
-  All_Transfers[[i]]$Club_Logo_URL<-aa[[i]]
+  All_Transfers[[i]]$Team_Name<-club_img_details1$Club_Title[[i]]
+  All_Transfers[[i]]$Club_Logo_URL<-club_img_details1$Club_Image_URL[[i]]
   if(grepl("In",colnames(All_Transfers[[i]])[1])==T){
     All_Transfers[[i]]$Transfer_Type="Arrivals"
     All_Transfers[[i]]<-All_Transfers[[i]] %>% select(-Left)
@@ -59,11 +74,7 @@ All_Transfers<-All_Transfers %>% select(-Nat.)
 write.csv(All_Transfers,"All_Transfers.csv")
 
 reactable(
-  All_Transfers %>% filter(
-    Team_Name == "Bengaluru FC",
-    Transfer_Type ==
-      "Arrivals"
-  ) %>% select(`Player Name`, Club_Logo_URL, everything()),
+  All_Transfers,
   theme = flatly(
     font_size = 12,
     font_color = "grey",

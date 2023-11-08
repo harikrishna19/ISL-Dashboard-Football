@@ -16,8 +16,10 @@ library(reactable)
 library(tidyverse)
 library(reactablefmtr)
 library(shiny)
+library(bslib)
 data<-read.csv("All_Transfers.csv")
-
+data<-data %>% select(-X)
+data$Market.value<-gsub("<[^>]+>", "", data$Market.value)
 ```
 
 
@@ -25,21 +27,29 @@ data<-read.csv("All_Transfers.csv")
 ```{r}
 selectInput("team","Select Team",choices=unique(data$Team_Name))
 selectInput("transfer","Select Transfer",choices=unique(data$Transfer_Type))
+card(
+  card_header(
+    class = "bg-dark",
+    "A header"
+  ),
+  card_body(
+    markdown("Some text with a [link](https://github.com)")
+  )
+)
+  card(full_screen = F, card_header("A filling plot"),plotOutput("gg"))
+
 reactableOutput("table")
+
 ```
 
 ```{r}
 #| context: server
 output$table <- renderReactable({
 reactable(
-  data %>% filter(input$team==Team_Name,input$transfer==Transfer_Type),
+  data %>% filter(input$team==Team_Name,input$transfer==Transfer_Type) %>% select(Club_Logo_URL,everything()),
   wrap = F,
   resizable = TRUE,
-  theme = fivethirtyeight(
-    font_size = 12,
-    font_color = "black",
-    cell_padding = 3
-  ),
+  theme = nytimes(header_font_color = "red",centered = T),
   pagination = F,
   striped = T,
   bordered = T,
@@ -47,7 +57,7 @@ reactable(
   compact = T,
   columns = list(
     #Club_Logo_URL = colDef(show = FALSE),
-    Player.Name= colDef(align="center",width = 200),
+Player.Name= colDef(align="center",width=500),
     Age=colDef(align="center"),
     Position=colDef(align="center"),
     Fee=colDef(align="center"),
@@ -58,10 +68,18 @@ reactable(
     Club_Logo_URL = colDef(
       name = "Team",
       align = "center",
-      cell = embed_img( width = 30)
+      cell = embed_img( width = "55px",height="35px")
     )
     #Club_Logo_URL = colDef(cell = embed_img(width = "20px", height = "30px"))
   )
 )
 })
+
+# output$gg<-renderPlot({
+#   mtcars %>% ggplot(aes(cyl,mpg))+geom_point()
+# })
+
+
+
+
 ```
