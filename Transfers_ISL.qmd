@@ -2,6 +2,8 @@
 title: "Indian Super League Season Transfers 23/24 "
 author: "Hari Krishna"
 format: html
+execute:
+  echo: false
 server: shiny
 ---
 
@@ -9,6 +11,9 @@ server: shiny
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 ```
 
+From the inception in 2013 season after season the league keeps improving.The introduction of promotion of team(Punjab FC) from I-league this season opens up lot of opportunities for the players in the league
+
+Let's look at how the teams have fared in the Transfer market for the 23/24 season
 
 ```{r}
 #| context: setup
@@ -17,27 +22,14 @@ library(tidyverse)
 library(reactablefmtr)
 library(shiny)
 library(bslib)
-data<-read.csv("All_Transfers.csv")
-data<-data %>% select(-X)
-data$Market.value<-gsub("<[^>]+>", "", data$Market.value)
+data<-read.csv("All_Transfers.csv",check.names = F)
+data$`Market values`<-gsub("<[^>]+>", "", data$`Market values`)
+data$Fee<-gsub("<[^>]+>", "", data$Fee)
 ```
-
-
 
 ```{r}
 selectInput("team","Select Team",choices=unique(data$Team_Name))
 selectInput("transfer","Select Transfer",choices=unique(data$Transfer_Type))
-card(
-  card_header(
-    class = "bg-dark",
-    "A header"
-  ),
-  card_body(
-    markdown("Some text with a [link](https://github.com)")
-  )
-)
-  card(full_screen = F, card_header("A filling plot"),plotOutput("gg"))
-
 reactableOutput("table")
 
 ```
@@ -46,23 +38,20 @@ reactableOutput("table")
 #| context: server
 output$table <- renderReactable({
 reactable(
-  data %>% filter(input$team==Team_Name,input$transfer==Transfer_Type) %>% select(Club_Logo_URL,everything()),
-  wrap = F,
-  resizable = TRUE,
-  theme = nytimes(header_font_color = "red",centered = T),
-  pagination = F,
+  data %>% filter(input$team==Team_Name,input$transfer==Transfer_Type) %>% select(Club_Logo_URL,`Player Name`,everything()),
+ pagination = T,
+  fullWidth = T,
   striped = T,
   bordered = T,
   highlight = T,
   compact = T,
   columns = list(
-    #Club_Logo_URL = colDef(show = FALSE),
-Player.Name= colDef(align="center",width=500),
-    Age=colDef(align="center"),
-    Position=colDef(align="center"),
-    Fee=colDef(align="center"),
-    Pos=colDef(align="center"),
-    Market.value=colDef(align="center"),
+    `Player Name`= colDef(align="center",width=1000,sticky = "right"),
+    Age=colDef(align="center",width=200),
+    Position=colDef(align="center",width=200),
+    Fee=colDef(align="center",width=200),
+    Pos=colDef(align="center",width=100),
+    `Market values`=colDef(align="center",width=200),
     Team_Name=colDef(show=F),
     Transfer_Type=colDef(show=F),
     Club_Logo_URL = colDef(
@@ -75,9 +64,7 @@ Player.Name= colDef(align="center",width=500),
 )
 })
 
-# output$gg<-renderPlot({
-#   mtcars %>% ggplot(aes(cyl,mpg))+geom_point()
-# })
+
 
 
 
